@@ -57,6 +57,11 @@ int EasySocket::Enviar(std::string msg){
 	std::cout << "Desconectado" << std::endl;
 	closesocket(sk->conection);
 	sk->closed=true;
+#ifdef _WIN32
+	return;
+#elif __linux__
+	return NULL;
+#endif
 }
 
 string EasySocket::getEntrada(){
