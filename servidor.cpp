@@ -10,6 +10,7 @@ EasyMultServer *servidor;
 map<int,vector<Nsock*>> salas;
 map<Nsock*,int> UserSala;
 map<Nsock*,bool> Dc;
+map<Nsock*,string> nicknames;
 const vector<string> split(const string& s, const char& c)
 {
 	string buff{""};
@@ -31,7 +32,10 @@ void msgSala(int sala_n,string msg,Nsock* user)
     for(int i=0;i<sala->size();i++)
     {
         if(!Dc[(*sala)[i]] && user!=(*sala)[i])
-            (*sala)[i]->SendMsg(msg);
+            if(nicknames[user]=="")
+                (*sala)[i]->SendMsg(to_string(user->id)+":"+msg);
+            else
+                (*sala)[i]->SendMsg(nicknames[user]+":"+msg);
     }
 }
 
@@ -42,7 +46,10 @@ void AnuncioSala(int sala_n,Nsock *user)
     for(int i=0;i<sala->size();i++)
     {
         if(!Dc[(*sala)[i]] && user!=(*sala)[i])
-            (*sala)[i]->SendMsg("ID > "+to_string(user->id)+" Se juntou a sala");
+            if(nicknames[user]=="")
+                (*sala)[i]->SendMsg("ID > "+to_string(user->id)+" Se juntou a sala");
+            else
+                (*sala)[i]->SendMsg(nicknames[user]+" Se juntou a sala");
     }
 }
 void DcFunction(void *arg){
@@ -78,6 +85,11 @@ void response(void *arg)
         salas[UserSala[Conexao]].push_back(Conexao);
         
     }
+    else if(msg.find("nick,")==0)
+    {
+        vector<string> dados{split(msg,',')};
+        nicknames[Conexao] = dados[1];
+    }
     else
     {
         msgSala(UserSala[Conexao],msg,Conexao);
@@ -87,6 +99,7 @@ void response(void *arg)
 void conectado(void *arg)
 {
     Nsock *Conexao = (Nsock*)arg;
+    nicknames[Conexao] = "";
     UserSala[Conexao]=0;
     AnuncioSala(0,Conexao);
     salas[0].push_back(Conexao);
